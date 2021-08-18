@@ -7,5 +7,6 @@ USER 1001
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD        [ "--config.file=/opt/bitnami/prometheus/conf/prometheus.yml", \
              "--storage.tsdb.path=/opt/bitnami/prometheus/data", \
+             "--log.format=json", \
              "--web.console.libraries=/opt/bitnami/prometheus/conf/console_libraries", \
              "--web.console.templates=/opt/bitnami/prometheus/conf/consoles" ]
