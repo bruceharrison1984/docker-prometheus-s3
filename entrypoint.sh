@@ -10,4 +10,7 @@ fi
 echo "Retrieving remote prometheus config: '${S3_CONFIG_LOCATION}'"
 aws s3 cp ${S3_CONFIG_LOCATION} /opt/bitnami/prometheus/conf/prometheus.yml
 
+echo "The following config was loaded:"
+cat /opt/bitnami/prometheus/conf/prometheus.yml
+
 /opt/bitnami/prometheus/bin/prometheus $@
