@@ -1,36 +1,66 @@
-# This is a basic workflow to help you get started with Actions
+name: Build and Push Container
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - "v*.*.*"
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+env:
+  IMG: ecomm-prometheus
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
+    name: Build and Push Container
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Set Environment Variables
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          echo "IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.IMG }}" >> $GITHUB_ENV
+          echo "BUILD_DATE=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+          echo "GIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+          echo "GIT_REF=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)" >> $GITHUB_ENV
+
+      - name: Login to GitHub Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+
+      - name: Docker build and push
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile
+          labels: |
+            org.opencontainers.image.authors=${{ github.repository_owner }}
+            org.opencontainers.image.created=${{ env.BUILD_DATE }}
+            org.opencontainers.image.description=Created from commit ${{ env.GIT_SHA }} and ref ${{ env.GIT_REF }}
+            org.opencontainers.image.ref.name=${{ env.GIT_REF }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ env.GIT_SHA }}
+            ${{ env.IMAGE }}:${{ env.GIT_REF }}
+          push: true
+          cache-from: type=registry,ref=user/app:latest
+          cache-to: type=inline
+
+      - name: Create Github Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ env.GIT_REF }}
+          body: Tag-based release initiated by ${{ github.actor }}
+          prerelease: false
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
