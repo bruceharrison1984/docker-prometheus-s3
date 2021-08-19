@@ -17,6 +17,9 @@ The container will need a policy similar to below to be able to fetch the config
 }
 ```
 
+## Prometheus UI
+The Prometheus UI is enabled by default, so be careful if deploying to a public IP address. It can be easily disable by overriding the CMD of the container.
+
 ## Reason
 In order to facilitate move prometheus metrics from ECS in to AWS Managed Prometheus, we need an intermediary Prometheus server to do the scraping.
 - Cloudwatch Agent doesn't support forwarding Prometheus metrics (it only sends them to Cloudwatch, and doesn't support histogram)
