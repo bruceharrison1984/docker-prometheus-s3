@@ -1,4 +1,4 @@
-FROM bitnami/prometheus:latest
+FROM bitnami/prometheus:2.29.1
 USER root
 RUN apt-get update && apt-get install -y awscli
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
